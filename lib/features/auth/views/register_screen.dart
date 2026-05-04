@@ -2,38 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
-import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/auth/controllers/auth_controller.dart';
 
-class LoginScreen extends GetView<AuthController> {
-  const LoginScreen({super.key});
+class RegisterScreen extends GetView<AuthController> {
+  const RegisterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Sign Up')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Form(
-            key: controller.loginFormKey,
+            key: controller.registerFormKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 80),
+                const SizedBox(height: 24),
                 Text(
-                  'Welcome Back',
+                  'Create Account',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue',
+                  'Sign up to get started',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.grey,
                       ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+                CustomTextField(
+                  controller: controller.nameController,
+                  labelText: 'Full Name',
+                  hintText: 'Enter your full name',
+                  textInputAction: TextInputAction.next,
+                  prefixIcon: const Icon(Icons.person_outlined),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 CustomTextField(
                   controller: controller.emailController,
                   labelText: 'Email',
@@ -58,7 +72,7 @@ class LoginScreen extends GetView<AuthController> {
                     labelText: 'Password',
                     hintText: 'Enter your password',
                     obscureText: !controller.isPasswordVisible.value,
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.next,
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -79,33 +93,53 @@ class LoginScreen extends GetView<AuthController> {
                     },
                   ),
                 ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Get.toNamed(Routes.forgotPassword),
-                    child: const Text('Forgot Password?'),
-                  ),
-                ),
                 const SizedBox(height: 16),
                 Obx(
+                  () => CustomTextField(
+                    controller: controller.confirmPasswordController,
+                    labelText: 'Confirm Password',
+                    hintText: 'Confirm your password',
+                    obscureText: !controller.isConfirmPasswordVisible.value,
+                    textInputAction: TextInputAction.done,
+                    prefixIcon: const Icon(Icons.lock_outlined),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isConfirmPasswordVisible.value
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: controller.toggleConfirmPasswordVisibility,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (value != controller.passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Obx(
                   () => CustomButton(
-                    text: 'Login',
+                    text: 'Sign Up',
                     isLoading: controller.isLoading.value,
-                    onPressed: controller.login,
+                    onPressed: controller.register,
                   ),
                 ),
                 const SizedBox(height: 24),
                 Center(
                   child: TextButton(
-                    onPressed: () => Get.toNamed(Routes.register),
+                    onPressed: () => Get.back(),
                     child: RichText(
                       text: TextSpan(
-                        text: "Don't have an account? ",
+                        text: 'Already have an account? ',
                         style: Theme.of(context).textTheme.bodyMedium,
                         children: [
                           TextSpan(
-                            text: 'Sign Up',
+                            text: 'Login',
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
@@ -116,6 +150,7 @@ class LoginScreen extends GetView<AuthController> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -124,3 +159,4 @@ class LoginScreen extends GetView<AuthController> {
     );
   }
 }
+

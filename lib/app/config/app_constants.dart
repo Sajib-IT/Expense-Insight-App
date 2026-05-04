@@ -5,7 +5,7 @@ class AppConstants {
   static const String appName = 'Expense Insight';
 
   // API
-  static const String baseUrl = 'https://api.example.com'; // TODO: Replace with actual API URL
+  static const String baseUrl = 'http://localhost:5000/api/v1';
 
   // Storage Keys
   static const String tokenKey = 'auth_token';
@@ -19,4 +19,3 @@ class AppConstants {
   static const int receiveTimeout = 30000;
   static const int sendTimeout = 30000;
 }
-
