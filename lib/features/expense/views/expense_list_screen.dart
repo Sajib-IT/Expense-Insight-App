@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:expense_insight/app/config/app_colors.dart';
+import 'package:expense_insight/app/common/widgets/shimmer_loading.dart';
 import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/expense/controllers/expense_controller.dart';
 
@@ -35,7 +36,7 @@ class ExpenseListScreen extends GetView<ExpenseController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.expenses.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ShimmerLoading.transactionList(context);
         }
 
         if (controller.expenses.isEmpty) {
@@ -272,4 +273,6 @@ class ExpenseListScreen extends GetView<ExpenseController> {
     );
   }
 }
+
+
 

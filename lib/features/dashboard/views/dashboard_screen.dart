@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:expense_insight/app/common/widgets/shimmer_loading.dart';
 import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/dashboard/controllers/dashboard_controller.dart';
 
@@ -22,7 +23,7 @@ class DashboardScreen extends GetView<DashboardController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.dashboard.value == null) {
-          return const Center(child: CircularProgressIndicator());
+          return ShimmerLoading.dashboard(context);
         }
 
         return RefreshIndicator(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:expense_insight/app/common/widgets/shimmer_loading.dart';
 import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/profile/controllers/profile_controller.dart';
 
@@ -12,7 +13,7 @@ class ProfileScreen extends GetView<ProfileController> {
       appBar: AppBar(title: const Text('Profile')),
       body: Obx(() {
         if (controller.isLoading.value && controller.user.value == null) {
-          return const Center(child: CircularProgressIndicator());
+          return ShimmerLoading.profile(context);
         }
 
         final user = controller.user.value;
@@ -138,4 +139,6 @@ class ProfileScreen extends GetView<ProfileController> {
     );
   }
 }
+
+
 

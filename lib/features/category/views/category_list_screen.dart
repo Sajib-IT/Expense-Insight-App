@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:expense_insight/app/common/widgets/shimmer_loading.dart';
 import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/category/controllers/category_controller.dart';
 
@@ -20,7 +21,7 @@ class CategoryListScreen extends GetView<CategoryController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.categories.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ShimmerLoading.categoryList(context);
         }
 
         if (controller.categories.isEmpty) {

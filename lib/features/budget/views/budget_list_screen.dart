@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:expense_insight/app/config/app_colors.dart';
+import 'package:expense_insight/app/common/widgets/shimmer_loading.dart';
 import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/budget/controllers/budget_controller.dart';
 
@@ -20,7 +21,7 @@ class BudgetListScreen extends GetView<BudgetController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.budgets.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ShimmerLoading.budgetList(context);
         }
 
         return RefreshIndicator(
