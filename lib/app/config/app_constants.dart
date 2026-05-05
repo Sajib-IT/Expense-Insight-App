@@ -5,7 +5,7 @@ class AppConstants {
   static const String appName = 'Expense Insight';
 
   // API
-  static const String baseUrl = 'http://localhost:5000/api/v1';
+  static const String baseUrl = 'https://expense-insight-backend.vercel.app/api/v1';
 
   // Storage Keys
   static const String tokenKey = 'auth_token';
