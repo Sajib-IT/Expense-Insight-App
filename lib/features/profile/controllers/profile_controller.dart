@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
+import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/user_model.dart';
 import 'package:expense_insight/app/data/network/api_exceptions.dart';
 import 'package:expense_insight/app/data/services/storage_service.dart';
@@ -45,13 +46,21 @@ class ProfileController extends GetxController {
 
       if (response['success'] == true && response['data'] != null) {
         user.value = UserModel.fromJson(response['data']);
-        CustomSnackbar.success('Profile updated successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Profile Updated!',
+          message: 'Your profile has been updated successfully.',
+        );
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to update profile');
+        await ResultDialog.error(
+          title: 'Failed to Update',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -63,4 +72,6 @@ class ProfileController extends GetxController {
     CustomSnackbar.info('Logged out successfully');
   }
 }
+
+
 

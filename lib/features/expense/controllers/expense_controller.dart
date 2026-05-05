@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
+import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/expense_model.dart';
 import 'package:expense_insight/app/data/models/api_response.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
@@ -102,14 +103,22 @@ class ExpenseController extends GetxController {
 
       if (response['success'] == true) {
         _clearForm();
-        CustomSnackbar.success('Transaction added successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Transaction Added!',
+          message: 'Your transaction has been added successfully.',
+        );
         fetchExpenses();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to add transaction');
+        await ResultDialog.error(
+          title: 'Failed to Add',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -133,14 +142,22 @@ class ExpenseController extends GetxController {
 
       if (response['success'] == true) {
         _clearForm();
-        CustomSnackbar.success('Transaction updated successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Transaction Updated!',
+          message: 'Your transaction has been updated successfully.',
+        );
         fetchExpenses();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to update');
+        await ResultDialog.error(
+          title: 'Failed to Update',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -151,12 +168,18 @@ class ExpenseController extends GetxController {
       final response = await _repository.deleteExpense(id);
       if (response['success'] == true) {
         expenses.removeWhere((e) => e.id == id);
-        CustomSnackbar.success('Transaction deleted');
+        CustomSnackbar.success('Transaction deleted successfully');
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to delete');
+        await ResultDialog.error(
+          title: 'Failed to Delete',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     }
   }
 
@@ -207,4 +230,7 @@ class ExpenseController extends GetxController {
     super.onClose();
   }
 }
+
+
+
 

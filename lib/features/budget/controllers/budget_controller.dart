@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
+import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/budget_model.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
 import 'package:expense_insight/app/data/network/api_exceptions.dart';
@@ -64,14 +65,22 @@ class BudgetController extends GetxController {
       if (response['success'] == true) {
         amountController.clear();
         selectedCategory.value = null;
-        CustomSnackbar.success('Budget created successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Budget Created!',
+          message: 'Your budget has been set successfully.',
+        );
         fetchBudgets();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to create budget');
+        await ResultDialog.error(
+          title: 'Failed to Create',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -89,14 +98,22 @@ class BudgetController extends GetxController {
 
       if (response['success'] == true) {
         amountController.clear();
-        CustomSnackbar.success('Budget updated successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Budget Updated!',
+          message: 'Your budget has been updated successfully.',
+        );
         fetchBudgets();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to update budget');
+        await ResultDialog.error(
+          title: 'Failed to Update',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -107,12 +124,18 @@ class BudgetController extends GetxController {
       final response = await _repository.deleteBudget(id);
       if (response['success'] == true) {
         budgets.removeWhere((b) => b.id == id);
-        CustomSnackbar.success('Budget deleted');
+        CustomSnackbar.success('Budget deleted successfully');
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to delete budget');
+        await ResultDialog.error(
+          title: 'Failed to Delete',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     }
   }
 
@@ -128,4 +151,8 @@ class BudgetController extends GetxController {
     super.onClose();
   }
 }
+
+
+
+
 

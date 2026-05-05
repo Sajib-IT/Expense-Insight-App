@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
+import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
 import 'package:expense_insight/app/data/network/api_exceptions.dart';
 import 'package:expense_insight/features/category/repositories/category_repository.dart';
@@ -69,14 +70,22 @@ class CategoryController extends GetxController {
 
       if (response['success'] == true) {
         _clearForm();
-        CustomSnackbar.success('Category created successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Category Created!',
+          message: 'Your new category has been created successfully.',
+        );
         fetchCategories();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to create category');
+        await ResultDialog.error(
+          title: 'Failed to Create',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -97,14 +106,22 @@ class CategoryController extends GetxController {
 
       if (response['success'] == true) {
         _clearForm();
-        CustomSnackbar.success('Category updated successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Category Updated!',
+          message: 'Your category has been updated successfully.',
+        );
         fetchCategories();
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to update category');
+        await ResultDialog.error(
+          title: 'Failed to Update',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isSaving.value = false;
     }
@@ -117,12 +134,18 @@ class CategoryController extends GetxController {
         categories.removeWhere((c) => c.id == id);
         expenseCategories.removeWhere((c) => c.id == id);
         incomeCategories.removeWhere((c) => c.id == id);
-        CustomSnackbar.success('Category deleted');
+        CustomSnackbar.success('Category deleted successfully');
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to delete category');
+        await ResultDialog.error(
+          title: 'Failed to Delete',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     }
   }
 

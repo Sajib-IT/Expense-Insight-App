@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
+import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/user_model.dart';
 import 'package:expense_insight/app/data/network/api_exceptions.dart';
 import 'package:expense_insight/app/data/services/storage_service.dart';
@@ -62,13 +63,18 @@ class AuthController extends GetxController {
         }
 
         _clearLoginFields();
-        CustomSnackbar.success('Login successful!');
         Get.offAllNamed(Routes.home);
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Login failed');
+        await ResultDialog.error(
+          title: 'Login Failed',
+          message: response['message'] ?? 'Invalid credentials.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -88,15 +94,23 @@ class AuthController extends GetxController {
 
       if (response['success'] == true) {
         _clearRegisterFields();
-        CustomSnackbar.success(
-          response['message'] ?? 'Registration successful! Please verify your email.',
+        await ResultDialog.success(
+          title: 'Account Created!',
+          message: response['message'] ?? 'Please check your email for verification.',
+          navigateBack: false,
         );
         Get.offAllNamed(Routes.login);
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Registration failed');
+        await ResultDialog.error(
+          title: 'Registration Failed',
+          message: response['message'] ?? 'Something went wrong.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -112,12 +126,15 @@ class AuthController extends GetxController {
         emailController.text.trim(),
       );
 
-      CustomSnackbar.success(
-        response['message'] ?? 'If the email exists, a reset link has been sent.',
+      await ResultDialog.success(
+        title: 'Email Sent!',
+        message: response['message'] ?? 'If the email exists, a reset link has been sent.',
       );
-      Get.back();
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isLoading.value = false;
     }
@@ -137,13 +154,21 @@ class AuthController extends GetxController {
       if (response['success'] == true) {
         currentPasswordController.clear();
         newPasswordController.clear();
-        CustomSnackbar.success(response['message'] ?? 'Password changed successfully');
-        Get.back();
+        await ResultDialog.success(
+          title: 'Password Changed!',
+          message: response['message'] ?? 'Your password has been updated.',
+        );
       } else {
-        CustomSnackbar.error(response['message'] ?? 'Failed to change password');
+        await ResultDialog.error(
+          title: 'Failed',
+          message: response['message'] ?? 'Failed to change password.',
+        );
       }
     } catch (e) {
-      CustomSnackbar.error(ApiExceptions.handleError(e));
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
     } finally {
       isLoading.value = false;
     }
