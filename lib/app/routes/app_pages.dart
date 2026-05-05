@@ -13,6 +13,7 @@ import 'package:expense_insight/features/expense/views/expense_detail_screen.dar
 import 'package:expense_insight/features/budget/views/add_budget_screen.dart';
 import 'package:expense_insight/features/category/views/category_list_screen.dart';
 import 'package:expense_insight/features/category/views/add_category_screen.dart';
+import 'package:expense_insight/features/category/controllers/category_controller.dart';
 import 'package:expense_insight/features/profile/views/edit_profile_screen.dart';
 import 'package:expense_insight/features/ai_extract/bindings/ai_extract_binding.dart';
 import 'package:expense_insight/features/ai_extract/views/ai_extract_screen.dart';
@@ -56,6 +57,11 @@ class AppPages {
     GetPage(
       name: Routes.addExpense,
       page: () => const AddExpenseScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<CategoryController>()) {
+          Get.put<CategoryController>(CategoryController());
+        }
+      }),
     ),
     GetPage(
       name: Routes.expenseDetail,
@@ -64,14 +70,29 @@ class AppPages {
     GetPage(
       name: Routes.addBudget,
       page: () => const AddBudgetScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<CategoryController>()) {
+          Get.put<CategoryController>(CategoryController());
+        }
+      }),
     ),
     GetPage(
       name: Routes.categories,
       page: () => const CategoryListScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<CategoryController>()) {
+          Get.put<CategoryController>(CategoryController());
+        }
+      }),
     ),
     GetPage(
       name: Routes.addCategory,
       page: () => const AddCategoryScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<CategoryController>()) {
+          Get.put<CategoryController>(CategoryController());
+        }
+      }),
     ),
     GetPage(
       name: Routes.editProfile,
@@ -104,4 +125,5 @@ class Routes {
   static const String aiExtract = '/ai-extract';
   static const String settings = '/settings';
 }
+
 
