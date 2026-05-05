@@ -16,6 +16,14 @@ class ExpenseListScreen extends GetView<ExpenseController> {
         title: const Text('Transactions'),
         actions: [
           Container(
+            margin: const EdgeInsets.only(right: 4),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () => controller.fetchExpenses(isRefresh: true),
+              tooltip: 'Reload',
+            ),
+          ),
+          Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
@@ -35,7 +43,8 @@ class ExpenseListScreen extends GetView<ExpenseController> {
         label: const Text('Add'),
       ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.expenses.isEmpty) {
+        if (controller.isLoading.value &&
+            (controller.expenses.isEmpty || controller.isRefreshing.value)) {
           return ShimmerLoading.transactionList(context);
         }
 
@@ -67,7 +76,7 @@ class ExpenseListScreen extends GetView<ExpenseController> {
         }
 
         return RefreshIndicator(
-          onRefresh: controller.fetchExpenses,
+          onRefresh: () => controller.fetchExpenses(isRefresh: true),
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification is ScrollEndNotification &&

@@ -8,6 +8,7 @@ class DashboardController extends GetxController {
   final DashboardRepository _repository = DashboardRepository();
 
   final isLoading = false.obs;
+  final isRefreshing = false.obs;
   final Rx<DashboardModel?> dashboard = Rx<DashboardModel?>(null);
   final selectedMonth = DateTime.now().month.obs;
   final selectedYear = DateTime.now().year.obs;
@@ -18,8 +19,11 @@ class DashboardController extends GetxController {
     fetchDashboard();
   }
 
-  Future<void> fetchDashboard() async {
+  Future<void> fetchDashboard({bool isRefresh = false}) async {
     try {
+      if (isRefresh) {
+        isRefreshing.value = true;
+      }
       isLoading.value = true;
       final response = await _repository.getDashboard(
         month: selectedMonth.value,
@@ -33,6 +37,7 @@ class DashboardController extends GetxController {
       CustomSnackbar.error(ApiExceptions.handleError(e));
     } finally {
       isLoading.value = false;
+      isRefreshing.value = false;
     }
   }
 
@@ -62,4 +67,7 @@ class DashboardController extends GetxController {
     fetchDashboard();
   }
 }
+
+
+
 

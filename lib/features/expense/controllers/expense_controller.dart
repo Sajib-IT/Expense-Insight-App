@@ -13,6 +13,7 @@ class ExpenseController extends GetxController {
 
   // Observables
   final isLoading = false.obs;
+  final isRefreshing = false.obs;
   final isSaving = false.obs;
   final expenses = <ExpenseModel>[].obs;
   final Rx<PaginationMeta?> paginationMeta = Rx<PaginationMeta?>(null);
@@ -39,7 +40,7 @@ class ExpenseController extends GetxController {
     fetchExpenses();
   }
 
-  Future<void> fetchExpenses({bool loadMore = false}) async {
+  Future<void> fetchExpenses({bool loadMore = false, bool isRefresh = false}) async {
     try {
       if (loadMore) {
         if (paginationMeta.value != null &&
@@ -49,6 +50,9 @@ class ExpenseController extends GetxController {
         currentPage.value++;
       } else {
         currentPage.value = 1;
+        if (isRefresh) {
+          isRefreshing.value = true;
+        }
         isLoading.value = true;
       }
 
@@ -79,6 +83,7 @@ class ExpenseController extends GetxController {
       CustomSnackbar.error(ApiExceptions.handleError(e));
     } finally {
       isLoading.value = false;
+      isRefreshing.value = false;
     }
   }
 
@@ -230,6 +235,9 @@ class ExpenseController extends GetxController {
     super.onClose();
   }
 }
+
+
+
 
 
 

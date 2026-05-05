@@ -10,16 +10,26 @@ class ProfileScreen extends GetView<ProfileController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => controller.fetchProfile(isRefresh: true),
+            tooltip: 'Reload',
+          ),
+        ],
+      ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.user.value == null) {
+        if (controller.isLoading.value &&
+            (controller.user.value == null || controller.isRefreshing.value)) {
           return ShimmerLoading.profile(context);
         }
 
         final user = controller.user.value;
 
         return RefreshIndicator(
-          onRefresh: controller.fetchProfile,
+          onRefresh: () => controller.fetchProfile(isRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(24),
@@ -139,6 +149,9 @@ class ProfileScreen extends GetView<ProfileController> {
     );
   }
 }
+
+
+
 
 
 

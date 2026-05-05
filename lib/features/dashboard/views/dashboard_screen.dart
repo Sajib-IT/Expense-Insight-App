@@ -15,6 +15,11 @@ class DashboardScreen extends GetView<DashboardController> {
         title: const Text('Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => controller.fetchDashboard(isRefresh: true),
+            tooltip: 'Reload',
+          ),
+          IconButton(
             icon: const Icon(Icons.document_scanner_outlined),
             onPressed: () => Get.toNamed(Routes.aiExtract),
             tooltip: 'AI Extract',
@@ -22,12 +27,13 @@ class DashboardScreen extends GetView<DashboardController> {
         ],
       ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.dashboard.value == null) {
+        if (controller.isLoading.value &&
+            (controller.dashboard.value == null || controller.isRefreshing.value)) {
           return ShimmerLoading.dashboard(context);
         }
 
         return RefreshIndicator(
-          onRefresh: controller.fetchDashboard,
+          onRefresh: () => controller.fetchDashboard(isRefresh: true),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),

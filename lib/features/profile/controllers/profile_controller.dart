@@ -12,6 +12,7 @@ class ProfileController extends GetxController {
   final StorageService _storageService = Get.find<StorageService>();
 
   final isLoading = false.obs;
+  final isRefreshing = false.obs;
   final isSaving = false.obs;
   final Rx<UserModel?> user = Rx<UserModel?>(null);
 
@@ -21,8 +22,11 @@ class ProfileController extends GetxController {
     fetchProfile();
   }
 
-  Future<void> fetchProfile() async {
+  Future<void> fetchProfile({bool isRefresh = false}) async {
     try {
+      if (isRefresh) {
+        isRefreshing.value = true;
+      }
       isLoading.value = true;
       final response = await _repository.getProfile();
 
@@ -33,6 +37,7 @@ class ProfileController extends GetxController {
       CustomSnackbar.error(ApiExceptions.handleError(e));
     } finally {
       isLoading.value = false;
+      isRefreshing.value = false;
     }
   }
 
@@ -72,6 +77,9 @@ class ProfileController extends GetxController {
     CustomSnackbar.info('Logged out successfully');
   }
 }
+
+
+
 
 
 

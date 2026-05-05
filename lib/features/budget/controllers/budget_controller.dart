@@ -11,6 +11,7 @@ class BudgetController extends GetxController {
   final BudgetRepository _repository = BudgetRepository();
 
   final isLoading = false.obs;
+  final isRefreshing = false.obs;
   final isSaving = false.obs;
   final budgets = <BudgetModel>[].obs;
   final selectedMonth = DateTime.now().month.obs;
@@ -27,8 +28,11 @@ class BudgetController extends GetxController {
     fetchBudgets();
   }
 
-  Future<void> fetchBudgets() async {
+  Future<void> fetchBudgets({bool isRefresh = false}) async {
     try {
+      if (isRefresh) {
+        isRefreshing.value = true;
+      }
       isLoading.value = true;
       final response = await _repository.getBudgets(
         month: selectedMonth.value,
@@ -43,6 +47,7 @@ class BudgetController extends GetxController {
       CustomSnackbar.error(ApiExceptions.handleError(e));
     } finally {
       isLoading.value = false;
+      isRefreshing.value = false;
     }
   }
 
@@ -151,6 +156,9 @@ class BudgetController extends GetxController {
     super.onClose();
   }
 }
+
+
+
 
 
 

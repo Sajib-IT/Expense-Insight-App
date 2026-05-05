@@ -12,7 +12,16 @@ class BudgetListScreen extends GetView<BudgetController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Budgets')),
+      appBar: AppBar(
+        title: const Text('Budgets'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () => controller.fetchBudgets(isRefresh: true),
+            tooltip: 'Reload',
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'addBudgetFab',
         onPressed: () => Get.toNamed(Routes.addBudget),
@@ -20,12 +29,13 @@ class BudgetListScreen extends GetView<BudgetController> {
         label: const Text('Add'),
       ),
       body: Obx(() {
-        if (controller.isLoading.value && controller.budgets.isEmpty) {
+        if (controller.isLoading.value &&
+            (controller.budgets.isEmpty || controller.isRefreshing.value)) {
           return ShimmerLoading.budgetList(context);
         }
 
         return RefreshIndicator(
-          onRefresh: controller.fetchBudgets,
+          onRefresh: () => controller.fetchBudgets(isRefresh: true),
           child: Column(
             children: [
               // Month Selector
