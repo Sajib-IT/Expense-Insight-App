@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
+import 'package:expense_insight/app/config/app_colors.dart';
 import 'package:expense_insight/features/auth/controllers/auth_controller.dart';
 
 class RegisterScreen extends GetView<AuthController> {
@@ -10,7 +11,10 @@ class RegisterScreen extends GetView<AuthController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(
+        title: const Text('Sign Up'),
+        backgroundColor: Colors.transparent,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -19,19 +23,18 @@ class RegisterScreen extends GetView<AuthController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
                 Text(
-                  'Create Account',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  'Create Account ✨',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign up to get started',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey,
-                      ),
+                  'Sign up to start tracking your expenses',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
                 ),
                 const SizedBox(height: 32),
                 CustomTextField(
@@ -39,11 +42,9 @@ class RegisterScreen extends GetView<AuthController> {
                   labelText: 'Full Name',
                   hintText: 'Enter your full name',
                   textInputAction: TextInputAction.next,
-                  prefixIcon: const Icon(Icons.person_outlined),
+                  prefixIcon: const Icon(Icons.person_outlined, size: 20),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your name';
                     return null;
                   },
                 ),
@@ -54,14 +55,10 @@ class RegisterScreen extends GetView<AuthController> {
                   hintText: 'Enter your email',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  prefixIcon: const Icon(Icons.email_outlined),
+                  prefixIcon: const Icon(Icons.email_outlined, size: 20),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!GetUtils.isEmail(value)) {
-                      return 'Please enter a valid email';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your email';
+                    if (!GetUtils.isEmail(value)) return 'Please enter a valid email';
                     return null;
                   },
                 ),
@@ -73,22 +70,17 @@ class RegisterScreen extends GetView<AuthController> {
                     hintText: 'Enter your password',
                     obscureText: !controller.isPasswordVisible.value,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(Icons.lock_outlined),
+                    prefixIcon: const Icon(Icons.lock_outlined, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        controller.isPasswordVisible.value
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        controller.isPasswordVisible.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 20,
                       ),
                       onPressed: controller.togglePasswordVisibility,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
+                      if (value == null || value.isEmpty) return 'Please enter your password';
+                      if (value.length < 6) return 'Password must be at least 6 characters';
                       return null;
                     },
                   ),
@@ -101,22 +93,17 @@ class RegisterScreen extends GetView<AuthController> {
                     hintText: 'Confirm your password',
                     obscureText: !controller.isConfirmPasswordVisible.value,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: const Icon(Icons.lock_outlined),
+                    prefixIcon: const Icon(Icons.lock_outlined, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        controller.isConfirmPasswordVisible.value
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                        controller.isConfirmPasswordVisible.value ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 20,
                       ),
                       onPressed: controller.toggleConfirmPasswordVisibility,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      if (value != controller.passwordController.text) {
-                        return 'Passwords do not match';
-                      }
+                      if (value == null || value.isEmpty) return 'Please confirm your password';
+                      if (value != controller.passwordController.text) return 'Passwords do not match';
                       return null;
                     },
                   ),
@@ -124,7 +111,7 @@ class RegisterScreen extends GetView<AuthController> {
                 const SizedBox(height: 32),
                 Obx(
                   () => CustomButton(
-                    text: 'Sign Up',
+                    text: 'Create Account',
                     isLoading: controller.isLoading.value,
                     onPressed: controller.register,
                   ),
@@ -136,14 +123,11 @@ class RegisterScreen extends GetView<AuthController> {
                     child: RichText(
                       text: TextSpan(
                         text: 'Already have an account? ',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                         children: [
                           TextSpan(
-                            text: 'Login',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            text: 'Sign In',
+                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
