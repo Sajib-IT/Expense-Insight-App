@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
 import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/expense_model.dart';
@@ -10,11 +11,13 @@ import 'package:expense_insight/features/expense/repositories/expense_repository
 
 class ExpenseController extends GetxController {
   final ExpenseRepository _repository = ExpenseRepository();
+  final ImagePicker _picker = ImagePicker();
 
   // Observables
   final isLoading = false.obs;
   final isRefreshing = false.obs;
   final isSaving = false.obs;
+  final isUploadingReceipt = false.obs;
   final expenses = <ExpenseModel>[].obs;
   final Rx<PaginationMeta?> paginationMeta = Rx<PaginationMeta?>(null);
 
@@ -228,6 +231,111 @@ class ExpenseController extends GetxController {
     selectedCategory.value = null;
   }
 
+  /// Upload receipt image/PDF for an expense
+  Future<void> uploadReceipt(String expenseId, {ImageSource source = ImageSource.gallery}) async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+
+      isUploadingReceipt.value = true;
+      final response = await _repository.uploadReceipt(expenseId, file.path);
+
+      if (response['success'] == true) {
+        // Update expense in local list
+        if (response['data'] != null) {
+          final updatedExpense = ExpenseModel.fromJson(response['data']);
+          final index = expenses.indexWhere((e) => e.id == expenseId);
+          if (index != -1) {
+            expenses[index] = updatedExpense;
+          }
+        }
+        await ResultDialog.success(
+          title: 'Receipt Uploaded!',
+          message: 'Your receipt has been attached to the transaction.',
+        );
+      } else {
+        await ResultDialog.error(
+          title: 'Upload Failed',
+          message: response['message'] ?? 'Something went wrong.',
+        );
+      }
+    } catch (e) {
+      await ResultDialog.error(
+        title: 'Error',
+        message: ApiExceptions.handleError(e),
+      );
+    } finally {
+      isUploadingReceipt.value = false;
+    }
+  }
+
+  /// Show bottom sheet to choose receipt upload source
+  void showReceiptOptions(String expenseId) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Get.theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Upload Receipt',
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Attach a receipt image to this transaction',
+              style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.1),
+                child: Icon(Icons.camera_alt_rounded, color: Get.theme.colorScheme.primary),
+              ),
+              title: const Text('Take Photo'),
+              subtitle: const Text('Capture receipt with camera'),
+              onTap: () {
+                Get.back();
+                uploadReceipt(expenseId, source: ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.purple.withValues(alpha: 0.1),
+                child: const Icon(Icons.photo_library_rounded, color: Colors.purple),
+              ),
+              title: const Text('Choose from Gallery'),
+              subtitle: const Text('Pick receipt from gallery'),
+              onTap: () {
+                Get.back();
+                uploadReceipt(expenseId, source: ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void onClose() {
     amountController.dispose();
@@ -235,6 +343,9 @@ class ExpenseController extends GetxController {
     super.onClose();
   }
 }
+
+
+
 
 
 

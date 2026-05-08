@@ -36,17 +36,49 @@ class ProfileScreen extends GetView<ProfileController> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                // Avatar
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: user?.avatar != null ? NetworkImage(user!.avatar!) : null,
-                  child: user?.avatar == null
-                      ? Text(
-                          (user?.name ?? 'U')[0].toUpperCase(),
-                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                        )
-                      : null,
-                ),
+                // Avatar with tap to change
+                Obx(() {
+                  final isUploading = controller.isUploadingAvatar.value;
+                  return GestureDetector(
+                    onTap: isUploading ? null : controller.showAvatarOptions,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundImage: user?.avatar != null ? NetworkImage(user!.avatar!) : null,
+                          child: user?.avatar == null
+                              ? Text(
+                                  (user?.name ?? 'U')[0].toUpperCase(),
+                                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                            ),
+                            child: isUploading
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 16),
                 Text(
                   user?.name ?? 'User',

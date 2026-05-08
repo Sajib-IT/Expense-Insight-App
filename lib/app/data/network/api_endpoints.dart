@@ -12,6 +12,7 @@ class ApiEndpoints {
 
   // User
   static const String profile = '/users/profile';
+  static const String profileAvatar = '/users/profile/avatar';
 
   // Categories
   static const String categories = '/categories';
@@ -20,6 +21,7 @@ class ApiEndpoints {
   // Expenses
   static const String expenses = '/expenses';
   static String expenseById(String id) => '/expenses/$id';
+  static String expenseReceipt(String id) => '/expenses/$id/receipt';
 
   // Budgets
   static const String budgets = '/budgets';
