@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
-import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/ai_extract/controllers/ai_extract_controller.dart';
 
 class AiExtractScreen extends GetView<AiExtractController> {
@@ -75,7 +74,7 @@ class AiExtractScreen extends GetView<AiExtractController> {
                 )),
             const SizedBox(height: 24),
 
-            // Results
+            // Latest extraction status
             Obx(() {
               if (controller.isLoading.value) {
                 return const Center(
@@ -97,17 +96,25 @@ class AiExtractScreen extends GetView<AiExtractController> {
 
               return Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Overview',
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Extraction ready',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                  )),
+                                  ),
+                            ),
+                          ),
                           if (data.confidence != null)
                             Chip(
                               label: Text('${(data.confidence! * 100).toStringAsFixed(0)}% confidence'),
@@ -117,55 +124,79 @@ class AiExtractScreen extends GetView<AiExtractController> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Nothing is saved yet. Review these values, edit if needed, then confirm on the next step.',
+                        'Your extracted data will open in a popup overview dialog where you can edit and confirm before saving.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
                       ),
                       const Divider(),
                       _resultRow('Amount', '\$${data.amount?.toStringAsFixed(2) ?? 'N/A'}'),
-                      _resultRow('Description', data.description ?? 'N/A'),
-                      _resultRow('Date', data.date ?? 'N/A'),
                       _resultRow('Type', data.type ?? 'N/A'),
                       _resultRow('Category', data.category ?? 'N/A'),
-                      _resultRow('Merchant', data.merchant ?? 'N/A'),
-                      _resultRow('Currency', data.currency ?? 'N/A'),
-                      if (data.items != null && data.items!.isNotEmpty) ...[
-                        const Divider(),
-                        Text('Items', style: Theme.of(context).textTheme.titleSmall),
-                        const SizedBox(height: 8),
-                        ...data.items!.map((item) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(child: Text('${item.name ?? ''} x${item.quantity ?? 1}')),
-                                  Text('\$${item.price?.toStringAsFixed(2) ?? '0.00'}'),
-                                ],
-                              ),
-                            )),
-                      ],
+                      if ((data.merchant ?? '').trim().isNotEmpty)
+                        _resultRow('Merchant', data.merchant!),
                       const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: controller.clearExtractedData,
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Start Over'),
+                              icon: const Icon(
+                                Icons.refresh_rounded,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Reset',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 4,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Expanded(
+                            flex: 2,
                             child: ElevatedButton.icon(
-                              onPressed: () => Get.toNamed(
-                                Routes.addExpense,
-                                arguments: {'aiDraft': data},
+                              onPressed: () => controller.openOverviewDialog(),
+                              icon: const Icon(
+                                Icons.edit_note_rounded,
+                                size: 18,
                               ),
-                              icon: const Icon(Icons.edit_note_rounded),
-                              label: const Text('Review & Confirm'),
+                              label: const Text(
+                                'Edit & Save',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 8,
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      // Row(
+                      //   children: [
+                      //     Expanded(
+                      //       child: OutlinedButton.icon(
+                      //         onPressed: controller.clearExtractedData,
+                      //         icon: const Icon(Icons.refresh_rounded),
+                      //         label: const Text('Start Over'),
+                      //       ),
+                      //     ),
+                      //     const SizedBox(width: 12),
+                      //     Expanded(
+                      //       child: ElevatedButton.icon(
+                      //         onPressed: () => controller.openOverviewDialog(),
+                      //         icon: const Icon(Icons.edit_note_rounded),
+                      //         label: const Text('Edit & Save'),
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),
@@ -221,6 +252,7 @@ class AiExtractScreen extends GetView<AiExtractController> {
     );
   }
 }
+
 
 
 
