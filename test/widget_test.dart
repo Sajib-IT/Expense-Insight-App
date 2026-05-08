@@ -1,30 +1,41 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 
-import 'package:expense_insight/main.dart';
+import 'package:expense_insight/app/data/models/ai_extract_model.dart';
+import 'package:expense_insight/app/data/network/dio_client.dart';
+import 'package:expense_insight/features/ai_extract/controllers/ai_extract_controller.dart';
+import 'package:expense_insight/features/ai_extract/views/ai_extract_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUp(() {
+    Get.testMode = true;
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  tearDown(Get.reset);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('AI extract screen shows editable overview entry point', (WidgetTester tester) async {
+    Get.put(DioClient(), permanent: true);
+    final controller = Get.put(AiExtractController());
+    controller.extractedData.value = AiExtractModel(
+      amount: 12.5,
+      description: 'Lunch at cafe',
+      date: '2026-05-08',
+      type: 'EXPENSE',
+      category: 'Food',
+      merchant: 'Cafe',
+      confidence: 0.92,
+    );
+
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: AiExtractScreen(),
+      ),
+    );
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('AI Extract'), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Review & Confirm'), findsOneWidget);
+    expect(find.text('Nothing is saved yet. Review these values, edit if needed, then confirm on the next step.'), findsOneWidget);
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
+import 'package:expense_insight/app/routes/app_pages.dart';
 import 'package:expense_insight/features/ai_extract/controllers/ai_extract_controller.dart';
 
 class AiExtractScreen extends GetView<AiExtractController> {
@@ -17,14 +18,14 @@ class AiExtractScreen extends GetView<AiExtractController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Extract expense data using AI',
+              'Extract transaction data using AI',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Scan a receipt or describe your expense in text.',
+              'Scan a receipt or describe your transaction in text.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 24),
@@ -58,7 +59,7 @@ class AiExtractScreen extends GetView<AiExtractController> {
             // Text Input
             const Divider(),
             const SizedBox(height: 16),
-            Text('Or describe your expense', style: Theme.of(context).textTheme.titleSmall),
+            Text('Or describe your transaction', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             CustomTextField(
               controller: controller.textController,
@@ -103,7 +104,7 @@ class AiExtractScreen extends GetView<AiExtractController> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Extracted Data',
+                          Text('Overview',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   )),
@@ -113,6 +114,11 @@ class AiExtractScreen extends GetView<AiExtractController> {
                               padding: EdgeInsets.zero,
                             ),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Nothing is saved yet. Review these values, edit if needed, then confirm on the next step.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
                       ),
                       const Divider(),
                       _resultRow('Amount', '\$${data.amount?.toStringAsFixed(2) ?? 'N/A'}'),
@@ -138,16 +144,27 @@ class AiExtractScreen extends GetView<AiExtractController> {
                             )),
                       ],
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // TODO: Navigate to add expense with pre-filled data
-                            Get.back();
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Create Transaction'),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: controller.clearExtractedData,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Start Over'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => Get.toNamed(
+                                Routes.addExpense,
+                                arguments: {'aiDraft': data},
+                              ),
+                              icon: const Icon(Icons.edit_note_rounded),
+                              label: const Text('Review & Confirm'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -204,4 +221,6 @@ class AiExtractScreen extends GetView<AiExtractController> {
     );
   }
 }
+
+
 

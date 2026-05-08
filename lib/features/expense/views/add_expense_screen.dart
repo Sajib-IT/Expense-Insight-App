@@ -3,28 +3,128 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
+import 'package:expense_insight/app/data/models/ai_extract_model.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
 import 'package:expense_insight/app/data/models/expense_model.dart';
 import 'package:expense_insight/features/expense/controllers/expense_controller.dart';
 import 'package:expense_insight/features/category/controllers/category_controller.dart';
 
-class AddExpenseScreen extends StatelessWidget {
+class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final expenseController = Get.find<ExpenseController>();
-    final categoryController = Get.find<CategoryController>();
-    final ExpenseModel? editExpense = Get.arguments;
-    final isEditing = editExpense != null;
+  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+}
 
-    if (isEditing) {
-      expenseController.loadExpenseForEdit(editExpense);
+class _AddExpenseScreenState extends State<AddExpenseScreen> {
+  final ExpenseController expenseController = Get.find<ExpenseController>();
+  final CategoryController categoryController = Get.find<CategoryController>();
+
+  ExpenseModel? editExpense;
+  AiExtractModel? aiDraft;
+  Worker? _categoryWorker;
+
+  bool get isEditing => editExpense != null;
+  bool get isAiReview => aiDraft != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _readArguments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeForm();
+    });
+  }
+
+  void _readArguments() {
+    final args = Get.arguments;
+
+    if (args is ExpenseModel) {
+      editExpense = args;
+      return;
     }
 
+    if (args is AiExtractModel) {
+      aiDraft = args;
+      return;
+    }
+
+    if (args is Map) {
+      if (args['expense'] is ExpenseModel) {
+        editExpense = args['expense'] as ExpenseModel;
+      }
+      if (args['aiDraft'] is AiExtractModel) {
+        aiDraft = args['aiDraft'] as AiExtractModel;
+      }
+    }
+  }
+
+  Future<void> _initializeForm() async {
+    expenseController.resetForm();
+
+    if (isEditing) {
+      expenseController.loadExpenseForEdit(editExpense!);
+      return;
+    }
+
+    if (!isAiReview) return;
+
+    expenseController.loadAiExtractDraft(
+      aiDraft!,
+      availableCategories: categoryController.categories,
+    );
+
+    if (expenseController.selectedCategory.value == null &&
+        categoryController.categories.isEmpty &&
+        !categoryController.isLoading.value) {
+      await categoryController.fetchCategories();
+    }
+
+    _tryApplySuggestedCategory();
+
+    _categoryWorker?.dispose();
+    if (expenseController.selectedCategory.value == null && categoryController.categories.isEmpty) {
+      _categoryWorker = ever(categoryController.categories, (_) {
+        _tryApplySuggestedCategory();
+        if (expenseController.selectedCategory.value != null || categoryController.categories.isNotEmpty) {
+          _categoryWorker?.dispose();
+          _categoryWorker = null;
+        }
+      });
+    }
+  }
+
+  void _tryApplySuggestedCategory() {
+    if (!isAiReview || expenseController.selectedCategory.value != null) return;
+
+    final match = expenseController.findMatchingCategory(
+      categoryName: aiDraft?.category,
+      type: expenseController.selectedTransactionType.value,
+      availableCategories: categoryController.categories,
+    );
+
+    if (match != null) {
+      expenseController.selectedCategory.value = match;
+    }
+  }
+
+  @override
+  void dispose() {
+    _categoryWorker?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        title: Text(
+          isEditing
+              ? 'Edit Transaction'
+              : isAiReview
+                  ? 'Review Extracted Data'
+                  : 'Add Transaction',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -33,6 +133,11 @@ class AddExpenseScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isAiReview) ...[
+                _buildAiReviewBanner(context),
+                const SizedBox(height: 20),
+              ],
+
               // Type Toggle
               Text('Type', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
@@ -51,7 +156,10 @@ class AddExpenseScreen extends StatelessWidget {
                     ],
                     selected: {expenseController.selectedTransactionType.value},
                     onSelectionChanged: (selected) {
-                      expenseController.selectedTransactionType.value = selected.first;
+                      expenseController.updateTransactionType(selected.first);
+                      if (isAiReview) {
+                        _tryApplySuggestedCategory();
+                      }
                     },
                   )),
               const SizedBox(height: 20),
@@ -137,11 +245,15 @@ class AddExpenseScreen extends StatelessWidget {
 
               // Submit Button
               Obx(() => CustomButton(
-                    text: isEditing ? 'Update' : 'Add Transaction',
+                    text: isEditing
+                        ? 'Update'
+                        : isAiReview
+                            ? 'Confirm & Save'
+                            : 'Add Transaction',
                     isLoading: expenseController.isSaving.value,
                     onPressed: () {
                       if (isEditing) {
-                        expenseController.updateExpense(editExpense.id);
+                        expenseController.updateExpense(editExpense!.id);
                       } else {
                         expenseController.createExpense();
                       }
@@ -150,6 +262,51 @@ class AddExpenseScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAiReviewBanner(BuildContext context) {
+    final confidence = aiDraft?.confidence;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Review before saving',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              if (confidence != null)
+                Chip(
+                  label: Text('${(confidence * 100).toStringAsFixed(0)}% confidence'),
+                  padding: EdgeInsets.zero,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'We prefilled this form from your AI extraction. Update any field if needed, then confirm to save it as a transaction.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
       ),
     );
   }

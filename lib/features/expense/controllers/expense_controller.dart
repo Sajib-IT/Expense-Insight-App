@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
 import 'package:expense_insight/app/common/widgets/result_dialog.dart';
+import 'package:expense_insight/app/data/models/ai_extract_model.dart';
 import 'package:expense_insight/app/data/models/expense_model.dart';
 import 'package:expense_insight/app/data/models/api_response.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
@@ -199,6 +201,59 @@ class ExpenseController extends GetxController {
     selectedCategory.value = expense.category;
   }
 
+  void resetForm() {
+    _clearForm();
+  }
+
+  void updateTransactionType(TransactionType type) {
+    selectedTransactionType.value = type;
+    if (selectedCategory.value?.type != type) {
+      selectedCategory.value = null;
+    }
+  }
+
+  void loadAiExtractDraft(
+    AiExtractModel data, {
+    List<CategoryModel> availableCategories = const [],
+  }) {
+    amountController.text = data.amount != null && data.amount! > 0 ? data.amount!.toString() : '';
+    descriptionController.text = _buildSuggestedDescription(data);
+    selectedDate.value = _parseExtractedDate(data.date) ?? DateTime.now();
+    selectedTransactionType.value = TransactionType.fromString(data.type ?? 'EXPENSE');
+    selectedCategory.value = findMatchingCategory(
+      categoryName: data.category,
+      type: selectedTransactionType.value,
+      availableCategories: availableCategories,
+    );
+  }
+
+  CategoryModel? findMatchingCategory({
+    required String? categoryName,
+    required TransactionType type,
+    required List<CategoryModel> availableCategories,
+  }) {
+    final query = _normalizeCategory(categoryName);
+    if (query.isEmpty) return null;
+
+    final filtered = availableCategories.where((category) => category.type == type).toList();
+    if (filtered.isEmpty) return null;
+
+    for (final category in filtered) {
+      if (_normalizeCategory(category.name) == query) {
+        return category;
+      }
+    }
+
+    for (final category in filtered) {
+      final normalizedName = _normalizeCategory(category.name);
+      if (normalizedName.contains(query) || query.contains(normalizedName)) {
+        return category;
+      }
+    }
+
+    return null;
+  }
+
   void applyFilters({
     String? type,
     String? categoryId,
@@ -229,6 +284,67 @@ class ExpenseController extends GetxController {
     selectedDate.value = DateTime.now();
     selectedTransactionType.value = TransactionType.EXPENSE;
     selectedCategory.value = null;
+  }
+
+  String _buildSuggestedDescription(AiExtractModel data) {
+    final extractedDescription = data.description?.trim();
+    if (extractedDescription != null && extractedDescription.isNotEmpty) {
+      return extractedDescription;
+    }
+
+    final merchant = data.merchant?.trim();
+    final itemNames = data.items
+            ?.map((item) => item.name?.trim())
+            .whereType<String>()
+            .where((item) => item.isNotEmpty)
+            .take(3)
+            .toList() ??
+        <String>[];
+
+    if (merchant != null && merchant.isNotEmpty && itemNames.isNotEmpty) {
+      return '$merchant - ${itemNames.join(', ')}';
+    }
+
+    if (merchant != null && merchant.isNotEmpty) {
+      return merchant;
+    }
+
+    return itemNames.join(', ');
+  }
+
+  DateTime? _parseExtractedDate(String? rawDate) {
+    if (rawDate == null || rawDate.trim().isEmpty) return null;
+
+    final value = rawDate.trim();
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) {
+      return parsed;
+    }
+
+    const patterns = [
+      'yyyy-MM-dd',
+      'dd/MM/yyyy',
+      'MM/dd/yyyy',
+      'dd-MM-yyyy',
+      'MMM d, yyyy',
+      'MMMM d, yyyy',
+      'd MMM yyyy',
+      'd MMMM yyyy',
+    ];
+
+    for (final pattern in patterns) {
+      try {
+        return DateFormat(pattern).parseStrict(value);
+      } catch (_) {
+        // Try the next supported format.
+      }
+    }
+
+    return null;
+  }
+
+  String _normalizeCategory(String? value) {
+    return (value ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
   /// Upload receipt image/PDF for an expense
@@ -343,6 +459,7 @@ class ExpenseController extends GetxController {
     super.onClose();
   }
 }
+
 
 
 

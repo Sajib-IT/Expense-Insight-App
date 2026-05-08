@@ -8,6 +8,7 @@ import 'package:expense_insight/features/auth/views/forgot_password_screen.dart'
 import 'package:expense_insight/features/auth/views/change_password_screen.dart';
 import 'package:expense_insight/features/home/bindings/home_binding.dart';
 import 'package:expense_insight/features/home/views/home_screen.dart';
+import 'package:expense_insight/features/expense/controllers/expense_controller.dart';
 import 'package:expense_insight/features/expense/views/add_expense_screen.dart';
 import 'package:expense_insight/features/expense/views/expense_detail_screen.dart';
 import 'package:expense_insight/features/budget/views/add_budget_screen.dart';
@@ -58,6 +59,9 @@ class AppPages {
       name: Routes.addExpense,
       page: () => const AddExpenseScreen(),
       binding: BindingsBuilder(() {
+        if (!Get.isRegistered<ExpenseController>()) {
+          Get.put<ExpenseController>(ExpenseController());
+        }
         if (!Get.isRegistered<CategoryController>()) {
           Get.put<CategoryController>(CategoryController());
         }
