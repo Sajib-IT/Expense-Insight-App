@@ -5,6 +5,7 @@ import 'package:expense_insight/app/common/widgets/custom_button.dart';
 import 'package:expense_insight/app/common/widgets/custom_text_field.dart';
 import 'package:expense_insight/app/data/models/ai_extract_model.dart';
 import 'package:expense_insight/app/data/models/category_model.dart';
+import 'package:expense_insight/features/category/controllers/category_controller.dart';
 
 class AiReviewSubmission {
   final double amount;
@@ -27,6 +28,12 @@ class AiReviewDialog extends StatefulWidget {
   final List<CategoryModel> categories;
   final RxBool isSaving;
   final Future<void> Function(AiReviewSubmission submission) onConfirm;
+  final Future<CategoryModel?> Function({
+    required String name,
+    required TransactionType type,
+    required String icon,
+    required String colour,
+  }) onCreateCategory;
 
   const AiReviewDialog({
     super.key,
@@ -34,6 +41,7 @@ class AiReviewDialog extends StatefulWidget {
     required this.categories,
     required this.isSaving,
     required this.onConfirm,
+    required this.onCreateCategory,
   });
 
   @override
@@ -45,12 +53,19 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
 
   late final TextEditingController _amountController;
   late final TextEditingController _descriptionController;
+  late final TextEditingController _newCategoryNameController;
   late DateTime _selectedDate;
   late TransactionType _selectedType;
+  late List<CategoryModel> _categories;
   CategoryModel? _selectedCategory;
   bool _showCategoryError = false;
+  bool _isCreateCategoryExpanded = false;
+  bool _isCreatingCategory = false;
+  String _selectedNewCategoryIcon = '📦';
+  String _selectedNewCategoryColour = CategoryController.availableColours[3];
+  String? _newCategoryError;
 
-  List<CategoryModel> get _availableCategories => widget.categories
+  List<CategoryModel> get _availableCategories => _categories
       .where((category) => category.type == _selectedType)
       .toList();
 
@@ -65,6 +80,8 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
     _descriptionController = TextEditingController(
       text: _buildSuggestedDescription(widget.data),
     );
+    _newCategoryNameController = TextEditingController();
+    _categories = [...widget.categories];
     _selectedType = TransactionType.fromString(widget.data.type ?? 'EXPENSE');
     _selectedDate = _parseExtractedDate(widget.data.date) ?? DateTime.now();
     _selectedCategory = _findMatchingCategory(widget.data.category, _selectedType);
@@ -74,6 +91,7 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
   void dispose() {
     _amountController.dispose();
     _descriptionController.dispose();
+    _newCategoryNameController.dispose();
     super.dispose();
   }
 
@@ -240,7 +258,23 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
                           },
                         ),
                         const SizedBox(height: 20),
-                        Text('Category', style: theme.textTheme.titleSmall),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text('Category', style: theme.textTheme.titleSmall),
+                            ),
+                            TextButton.icon(
+                              onPressed: _toggleCreateCategory,
+                              icon: Icon(
+                                _isCreateCategoryExpanded ? Icons.close_rounded : Icons.add_rounded,
+                                size: 18,
+                              ),
+                              label: Text(
+                                _isCreateCategoryExpanded ? 'Close Creator' : 'Create Category',
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 8),
                         if (_availableCategories.isEmpty)
                           Container(
@@ -272,6 +306,15 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
                               );
                             }).toList(),
                           ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: _isCreateCategoryExpanded
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: _buildCreateCategorySection(context),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
                         if (_showCategoryError)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
@@ -376,11 +419,231 @@ class _AiReviewDialogState extends State<AiReviewDialog> {
     );
   }
 
+  void _toggleCreateCategory() {
+    setState(() {
+      _isCreateCategoryExpanded = !_isCreateCategoryExpanded;
+      _newCategoryError = null;
+      if (!_isCreateCategoryExpanded) {
+        _resetCreateCategoryForm();
+      }
+    });
+  }
+
+  Future<void> _createCategory() async {
+    final name = _newCategoryNameController.text.trim();
+    if (name.isEmpty) {
+      setState(() {
+        _newCategoryError = 'Please enter a category name';
+      });
+      return;
+    }
+
+    final duplicate = _categories.any(
+      (category) =>
+          category.type == _selectedType &&
+          _normalizeCategory(category.name) == _normalizeCategory(name),
+    );
+    if (duplicate) {
+      setState(() {
+        _newCategoryError = 'A category with this name already exists';
+      });
+      return;
+    }
+
+    setState(() {
+      _isCreatingCategory = true;
+      _newCategoryError = null;
+    });
+
+    final createdCategory = await widget.onCreateCategory(
+      name: name,
+      type: _selectedType,
+      icon: _selectedNewCategoryIcon,
+      colour: _selectedNewCategoryColour,
+    );
+
+    if (!mounted) return;
+
+    if (createdCategory == null) {
+      setState(() {
+        _isCreatingCategory = false;
+        _newCategoryError = 'Unable to create category. Please try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isCreatingCategory = false;
+      _categories.removeWhere((category) => category.id == createdCategory.id);
+      _categories.add(createdCategory);
+      _selectedCategory = createdCategory;
+      _showCategoryError = false;
+      _isCreateCategoryExpanded = false;
+      _resetCreateCategoryForm();
+    });
+  }
+
+  Widget _buildCreateCategorySection(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Create category instantly',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Add a new ${_selectedType == TransactionType.EXPENSE ? 'expense' : 'income'} category and keep it selected for this transaction.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _newCategoryNameController,
+            labelText: 'New Category Name',
+            hintText: 'e.g., Snacks, Bonus, Transport',
+            prefixIcon: const Icon(Icons.category_outlined),
+            onChanged: (_) {
+              if (_newCategoryError != null) {
+                setState(() {
+                  _newCategoryError = null;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          Text('Choose Icon', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: CategoryController.availableIcons.take(12).map((icon) {
+              final isSelected = _selectedNewCategoryIcon == icon;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedNewCategoryIcon = icon;
+                  });
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primaryContainer
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outlineVariant,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(child: Text(icon, style: const TextStyle(fontSize: 20))),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Text('Choose Color', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: CategoryController.availableColours.map((color) {
+              final isSelected = _selectedNewCategoryColour == color;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedNewCategoryColour = color;
+                  });
+                },
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      width: 3,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)]
+                        : null,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          if (_newCategoryError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _newCategoryError!,
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isCreatingCategory
+                      ? null
+                      : () {
+                          setState(() {
+                            _isCreateCategoryExpanded = false;
+                            _resetCreateCategoryForm();
+                          });
+                        },
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: 'Create Now',
+                  isLoading: _isCreatingCategory,
+                  onPressed: _createCategory,
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetCreateCategoryForm() {
+    _newCategoryNameController.clear();
+    _selectedNewCategoryIcon = '📦';
+    _selectedNewCategoryColour = CategoryController.availableColours[3];
+    _newCategoryError = null;
+    _isCreatingCategory = false;
+  }
+
   CategoryModel? _findMatchingCategory(String? categoryName, TransactionType type) {
     final query = _normalizeCategory(categoryName);
     if (query.isEmpty) return null;
 
-    final filtered = widget.categories.where((category) => category.type == type).toList();
+    final filtered = _categories.where((category) => category.type == type).toList();
     for (final category in filtered) {
       if (_normalizeCategory(category.name) == query) {
         return category;

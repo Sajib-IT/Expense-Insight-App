@@ -23,6 +23,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   ExpenseModel? editExpense;
   AiExtractModel? aiDraft;
   Worker? _categoryWorker;
+  late final TextEditingController _newCategoryNameController;
+
+  bool _isCreateCategoryExpanded = false;
+  bool _isCreatingCategory = false;
+  String _selectedNewCategoryIcon = '📦';
+  String _selectedNewCategoryColour = CategoryController.availableColours[3];
+  String? _newCategoryError;
 
   bool get isEditing => editExpense != null;
   bool get isAiReview => aiDraft != null;
@@ -30,6 +37,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    _newCategoryNameController = TextEditingController();
     _readArguments();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm();
@@ -110,6 +118,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   @override
   void dispose() {
+    _newCategoryNameController.dispose();
     _categoryWorker?.dispose();
     super.dispose();
   }
@@ -157,6 +166,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     selected: {expenseController.selectedTransactionType.value},
                     onSelectionChanged: (selected) {
                       expenseController.updateTransactionType(selected.first);
+                      _resetQuickCategoryError();
                       if (isAiReview) {
                         _tryApplySuggestedCategory();
                       }
@@ -219,12 +229,40 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 16),
 
               // Category Selector
-              Text('Category', style: Theme.of(context).textTheme.titleSmall),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Category', style: Theme.of(context).textTheme.titleSmall),
+                  ),
+                  TextButton.icon(
+                    onPressed: _toggleCreateCategory,
+                    icon: Icon(
+                      _isCreateCategoryExpanded ? Icons.close_rounded : Icons.add_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _isCreateCategoryExpanded ? 'Close Creator' : 'Create Category',
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               Obx(() {
                 final cats = expenseController.selectedTransactionType.value == TransactionType.EXPENSE
                     ? categoryController.expenseCategories
                     : categoryController.incomeCategories;
+
+                if (cats.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text('No categories available for this type yet. Please create one first.'),
+                  );
+                }
 
                 return Wrap(
                   spacing: 8,
@@ -241,6 +279,15 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   }).toList(),
                 );
               }),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: _isCreateCategoryExpanded
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _buildQuickCategoryCreator(context),
+                      )
+                    : const SizedBox.shrink(),
+              ),
               const SizedBox(height: 32),
 
               // Submit Button
@@ -309,6 +356,228 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildQuickCategoryCreator(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Create category instantly',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Create a new ${expenseController.selectedTransactionType.value == TransactionType.EXPENSE ? 'expense' : 'income'} category and use it right away.',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _newCategoryNameController,
+            labelText: 'New Category Name',
+            hintText: 'e.g., Snacks, Bonus, Fuel',
+            prefixIcon: const Icon(Icons.category_outlined),
+            onChanged: (_) => _resetQuickCategoryError(),
+          ),
+          const SizedBox(height: 16),
+          Text('Choose Icon', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: CategoryController.availableIcons.take(12).map((icon) {
+              final isSelected = _selectedNewCategoryIcon == icon;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedNewCategoryIcon = icon;
+                  });
+                },
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primaryContainer
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outlineVariant,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(child: Text(icon, style: const TextStyle(fontSize: 20))),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Text('Choose Color', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: CategoryController.availableColours.map((color) {
+              final isSelected = _selectedNewCategoryColour == color;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedNewCategoryColour = color;
+                  });
+                },
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      width: 3,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)]
+                        : null,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          if (_newCategoryError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _newCategoryError!,
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isCreatingCategory ? null : _closeCreateCategory,
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: 'Create Now',
+                  isLoading: _isCreatingCategory,
+                  onPressed: _createCategory,
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleCreateCategory() {
+    setState(() {
+      _isCreateCategoryExpanded = !_isCreateCategoryExpanded;
+      if (!_isCreateCategoryExpanded) {
+        _resetQuickCategoryForm();
+      }
+    });
+  }
+
+  void _closeCreateCategory() {
+    setState(() {
+      _isCreateCategoryExpanded = false;
+      _resetQuickCategoryForm();
+    });
+  }
+
+  Future<void> _createCategory() async {
+    final name = _newCategoryNameController.text.trim();
+    if (name.isEmpty) {
+      setState(() {
+        _newCategoryError = 'Please enter a category name';
+      });
+      return;
+    }
+
+    final selectedType = expenseController.selectedTransactionType.value;
+    final duplicateExists = categoryController.categories.any(
+      (category) =>
+          category.type == selectedType &&
+          _normalizeCategoryName(category.name) == _normalizeCategoryName(name),
+    );
+    if (duplicateExists) {
+      setState(() {
+        _newCategoryError = 'A category with this name already exists';
+      });
+      return;
+    }
+
+    setState(() {
+      _isCreatingCategory = true;
+      _newCategoryError = null;
+    });
+
+    final createdCategory = await categoryController.createQuickCategory(
+      name: name,
+      type: selectedType,
+      icon: _selectedNewCategoryIcon,
+      colour: _selectedNewCategoryColour,
+    );
+
+    if (!mounted) return;
+
+    if (createdCategory == null) {
+      setState(() {
+        _isCreatingCategory = false;
+        _newCategoryError = 'Unable to create category. Please try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isCreatingCategory = false;
+      _isCreateCategoryExpanded = false;
+      expenseController.selectedCategory.value = createdCategory;
+      _resetQuickCategoryForm();
+    });
+  }
+
+  void _resetQuickCategoryError() {
+    if (_newCategoryError == null) return;
+    setState(() {
+      _newCategoryError = null;
+    });
+  }
+
+  void _resetQuickCategoryForm() {
+    _newCategoryNameController.clear();
+    _selectedNewCategoryIcon = '📦';
+    _selectedNewCategoryColour = CategoryController.availableColours[3];
+    _newCategoryError = null;
+    _isCreatingCategory = false;
+  }
+
+  String _normalizeCategoryName(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 }
 

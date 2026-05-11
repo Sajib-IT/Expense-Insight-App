@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:expense_insight/app/common/widgets/custom_snackbar.dart';
 import 'package:expense_insight/app/common/widgets/result_dialog.dart';
 import 'package:expense_insight/app/data/models/ai_extract_model.dart';
+import 'package:expense_insight/app/data/models/category_model.dart';
 import 'package:expense_insight/app/data/network/api_exceptions.dart';
 import 'package:expense_insight/features/ai_extract/repositories/ai_extract_repository.dart';
 import 'package:expense_insight/features/ai_extract/widgets/ai_review_dialog.dart';
@@ -134,6 +135,18 @@ class AiExtractController extends GetxController {
         categories: categoryController.categories.toList(),
         isSaving: isSavingReview,
         onConfirm: saveReviewedTransaction,
+        onCreateCategory: ({
+          required String name,
+          required TransactionType type,
+          required String icon,
+          required String colour,
+        }) =>
+            categoryController.createQuickCategory(
+          name: name,
+          type: type,
+          icon: icon,
+          colour: colour,
+        ),
       ),
       barrierDismissible: false,
     );
